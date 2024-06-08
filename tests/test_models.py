@@ -19,3 +19,14 @@ class TestModels(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    
+author1 = Author("John Doe")
+magazine1 = Magazine("The Daily News", "News")
+article1 = Article(author1, magazine1, "New Developments in AI")
+
+# Test methods
+print(author1.articles())
+print(magazine1.articles())
+print(magazine1.contributors())
+print(magazine1.article_titles())
+print(magazine1.contributing_authors())

@@ -1,4 +1,4 @@
-from conn import CURSOR, CONN
+from models.connect import cursor, conn
 
 class Magazine:
     def __init__(self, id=None, name=None, category=None):
@@ -37,10 +37,10 @@ class Magazine:
 
     @category.setter
     def category(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Category must be of type str")
-        if len(value) == 0:
-            raise ValueError("Category must be longer than 0 characters")
+        if isinstance(value, str)and len(value)>0:
+             ValueError("Category must be of type str")
+        
+             ValueError("Category must be longer than 0 characters")
         self._category = value
 
     def articles(self):
@@ -50,8 +50,8 @@ class Magazine:
             FROM articles
             WHERE articles.magazine_id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        rows = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        rows = cursor.fetchall()
         return [Article(row[0], row[1], row[2], row[3], row[4]) for row in rows]
 
     def contributors(self):
@@ -62,8 +62,8 @@ class Magazine:
             INNER JOIN articles ON authors.id = articles.author_id
             WHERE articles.magazine_id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        rows = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        rows = cursor.fetchall()
         return [Author(row[0], row[1]) for row in rows]
 
     def article_titles(self):
@@ -72,8 +72,8 @@ class Magazine:
             FROM articles
             WHERE articles.magazine_id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        rows = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        rows = cursor.fetchall()
         return [row[0] for row in rows] if rows else None
 
     def contributing_authors(self):
@@ -86,8 +86,8 @@ class Magazine:
             GROUP BY authors.id, authors.name
             HAVING COUNT(articles.id) > 2
         """
-        CURSOR.execute(sql, (self.id,))
-        rows = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        rows = cursor.fetchall()
         return [Author(row[0], row[1]) for row in rows] if rows else None
 
     def save(self):
@@ -96,17 +96,17 @@ class Magazine:
                 INSERT INTO magazines (name, category)
                 VALUES (?, ?)
             """
-            CURSOR.execute(sql, (self.name, self.category))
-            CONN.commit()
-            self.id = CURSOR.lastrowid
+            cursor.execute(sql, (self.name, self.category))
+            conn.commit()
+            self.id = cursor.lastrowid
         else:
             sql = """
                 UPDATE magazines
                 SET name = ?, category = ?
                 WHERE id = ?
             """
-            CURSOR.execute(sql, (self.name, self.category, self.id))
-            CONN.commit()
+            cursor.execute(sql, (self.name, self.category, self.id))
+            conn.commit()
 
 
     @classmethod
@@ -119,5 +119,5 @@ class Magazine:
             SELECT *
             FROM magazines
         """
-        rows = CURSOR.execute(sql).fetchall()
+        rows = cursor.execute(sql).fetchall()
         return [cls.instance_from_db(row) for row in rows]

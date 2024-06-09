@@ -1,4 +1,4 @@
-from models.conn import CONN, CURSOR
+from models.connect import conn, cursor as default_cursor
 
 class Author:
     def __init__(self, id=None, name=None):
@@ -28,7 +28,7 @@ class Author:
             raise ValueError("Name must be a non-empty string")
         self._name = value
 
-    def articles(self):
+    def articles(self, cursor=default_cursor):
         from models.article import Article
         sql = """
             SELECT articles.id, articles.title, articles.content, articles.author_id, articles.magazine_id
@@ -36,11 +36,11 @@ class Author:
             INNER JOIN authors ON authors.id = articles.author_id
             WHERE authors.id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        rows = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        rows = cursor.fetchall()
         return [Article(row[0], row[1], row[2], row[3], row[4]) for row in rows]
 
-    def magazines(self):
+    def magazines(self, cursor=default_cursor):
         from models.magazine import Magazine
         sql = """
             SELECT DISTINCT magazines.id, magazines.name, magazines.category
@@ -48,43 +48,37 @@ class Author:
             INNER JOIN articles ON magazines.id = articles.magazine_id
             WHERE articles.author_id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        rows = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        rows = cursor.fetchall()
         return [Magazine(row[0], row[1], row[2]) for row in rows]
 
-    def save(self):
+    def save(self, cursor=default_cursor):
         if self.id is None:
             sql = """
                 INSERT INTO authors (name)
                 VALUES (?)
             """
-            CURSOR.execute(sql, (self.name,))
-            CONN.commit()
-            self.id = CURSOR.lastrowid
+            cursor.execute(sql, (self.name,))
+            conn.commit()
+            self.id = cursor.lastrowid
         else:
             sql = """
                 UPDATE authors
                 SET name = ?
                 WHERE id = ?
             """
-            CURSOR.execute(sql, (self.name, self.id))
-            CONN.commit()
+            cursor.execute(sql, (self.name, self.id))
+            conn.commit()
 
     @classmethod
     def instance_from_db(cls, row):
         return cls(row[0], row[1])
 
     @classmethod
-    def get_all(cls):
+    def get_all_authors(cls, cursor=default_cursor):
         sql = """
             SELECT *
             FROM authors
         """
-        rows = CURSOR.execute(sql).fetchall()
-        return [cls.instance_from_db(row) for row in rows]
-
-# Example usage:
-# author = Author(name="John Doe")
-# author.save()
-# print(author.articles())
-# print(author.magazines())
+        authors_data = cursor.fetchall()
+        return [cls(id=row[0], name=row[1]) for row in authors_data]

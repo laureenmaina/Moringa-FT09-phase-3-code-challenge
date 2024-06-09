@@ -1,6 +1,7 @@
-from conn import CURSOR, CONN
-
+from models.connect import cursor, conn
+   
 class Article:
+    
     def __init__(self, id=None, title=None, content=None, author_id=None, magazine_id=None):
         self.id = id
         self.title = title
@@ -11,7 +12,6 @@ class Article:
     def __repr__(self):
         return f'<Article {self.title}>'
     
-    from database.setup import create_tables
 
     @property
     def id(self):
@@ -73,8 +73,8 @@ class Article:
             ON authors.id = articles.author_id
             WHERE articles.id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        row = CURSOR.fetchone()
+        cursor.execute(sql, (self.id,))
+        row = cursor.fetchone()
         if row:
             return Author(row[0], row[1])
         else:
@@ -90,8 +90,8 @@ class Article:
             ON magazines.id = articles.magazine_id
             WHERE articles.id = ?
         """
-        CURSOR.execute(sql, (self.id,))
-        row = CURSOR.fetchone()
+        cursor.execute(sql, (self.id,))
+        row = cursor.fetchone()
         if row:
             return Magazine(row[0], row[1], row[2])
         else:
@@ -103,17 +103,17 @@ class Article:
                 INSERT INTO articles (title, content, author_id, magazine_id)
                 VALUES (?, ?, ?, ?)
             """
-            CURSOR.execute(sql, (self.title, self.content, self.author_id, self.magazine_id))
-            CONN.commit()
-            self.id = CURSOR.lastrowid
+            cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id))
+            conn.commit()
+            self.id = cursor.lastrowid
         else:
             sql = """
                 UPDATE articles
                 SET title = ?, content = ?, author_id = ?, magazine_id = ?
                 WHERE id = ?
             """
-            CURSOR.execute(sql, (self.title, self.content, self.author_id, self.magazine_id, self.id))
-            CONN.commit()
+            cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id, self.id))
+            conn.commit()
 
     @classmethod
     def instance_from_db(cls, row):
@@ -125,43 +125,41 @@ class Article:
             SELECT *
             FROM articles
         """
-        rows = CURSOR.execute(sql).fetchall()
+        rows = cursor.execute(sql).fetchall()
         return [cls.instance_from_db(row) for row in rows]
     
+# if __name__ == "__main__":
+#     new_article = Article(title='My First Article', content='This is the content of my first article.', author_id=1, magazine_id=2)
+#     new_article.save()
+#     print(f'New article created with ID: {new_article.id}')
 
-new_article = Article(title='My First Article', content='This is the content of my first article.', author_id=1, magazine_id=2)
-new_article.save()
-print(f'New article created with ID: {new_article.id}')
+#     # Fetch and print all articles
+#     all_articles = Article.get_all()
+#     print('All Articles:')
+#     for article in all_articles:
+#         print(article)
 
-# Fetch and print all articles
-all_articles = Article.get_all()
-print('All Articles:')
-for article in all_articles:
-    print(article)
+#     # Fetch an article by ID
+#     article_id = new_article.id
+#     fetched_article = None
+#     for article in all_articles:
+#         if article.id == article_id:
+#             fetched_article = article
+#             break
 
-# Fetch an article by ID
-article_id = new_article.id
-fetched_article = None
-for article in all_articles:
-    if article.id == article_id:
-        fetched_article = article
-        break
+#     if fetched_article:
+#         print(f'Fetched Article: {fetched_article}')
+#         print(f'Author: {fetched_article.author}')
+#         print(f'Magazine: {fetched_article.magazine}')
 
-if fetched_article:
-    print(f'Fetched Article: {fetched_article}')
-    print(f'Author: {fetched_article.author}')
-    print(f'Magazine: {fetched_article.magazine}')
+#     # Update an existing article
+#     fetched_article.title = 'Updated Article Title'
+#     fetched_article.content = 'Updated content of the article.'
+#     fetched_article.save()
+#     print(f'Updated Article: {fetched_article}')
 
-# Update an existing article
-fetched_article.title = 'Updated Article Title'
-fetched_article.content = 'Updated content of the article.'
-fetched_article.save()
-print(f'Updated Article: {fetched_article}')
-
-# Fetch and print all articles again to see the update
-all_articles = Article.get_all()
-print('All Articles After Update:')
-for article in all_articles:
-    print(article)
-
-
+#     # Fetch and print all articles again to see the update
+#     all_articles = Article.get_all()
+#     print('All Articles After Update:')
+#     for article in all_articles:
+#         print(article)

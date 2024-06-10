@@ -15,7 +15,7 @@ class Author:
     @id.setter
     def id(self, value):
         if not isinstance(value, int):
-            raise TypeError("Id must be of type int")
+            TypeError("Id must be of type int")
         self._id = value
 
     @property
@@ -80,5 +80,8 @@ class Author:
             SELECT *
             FROM authors
         """
-        authors_data = cursor.fetchall()
-        return [cls(id=row[0], name=row[1]) for row in authors_data]
+        rows = cursor.execute(sql).fetchall()
+        return [cls.instance_from_db(row) for row in rows]
+    
+  
+

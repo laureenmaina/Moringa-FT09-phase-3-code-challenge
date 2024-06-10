@@ -2,6 +2,7 @@ import unittest
 from models.author import Author
 from models.article import Article
 from models.magazine import Magazine
+# from unittest.mock import MagicMock
 from models.connect import conn,cursor
 from database.setup import create_tables
 
@@ -9,6 +10,14 @@ from database.setup import create_tables
 create_tables()
 
 class TestModels(unittest.TestCase):
+
+    def setUp(self):
+        # Ensure database is clean before each test
+        cursor.execute("DELETE FROM articles")
+        cursor.execute("DELETE FROM authors")
+        cursor.execute("DELETE FROM magazines")
+        conn.commit()
+
     def test_author_creation(self):
         author = Author(1, "John Doe")
         self.assertEqual(author.name, "John Doe")
@@ -22,20 +31,22 @@ class TestModels(unittest.TestCase):
         self.assertEqual(magazine.name, "Tech Weekly")
 
     def test_get_all_authors(self):
-        # Mocking database response
-        self.cursor.fetchall.return_value = [(1, "John Doe"), (2, "John Doe")]
-        authors = Author.get_all_authors(self.cursor)
-        # Checking if execute method was called with correct argument
-        self.cursor.execute.assert_called_once_with("SELECT * FROM authors")
-        # Checking if authors were fetched correctly
+        # Insert test data
+        author1 = Author(name="John Doe")
+        author1.save()
+
+        author2 = Author(name="Jane Doe")
+        author2.save()
+
+        # Fetch all authors
+        authors = Author.get_all_authors()
+
+        # Verify that two authors are fetched
         self.assertEqual(len(authors), 2)
-        self.assertEqual(authors[0].id, 1)
+
+        # Verify that fetched authors match the inserted data
         self.assertEqual(authors[0].name, "John Doe")
-        self.assertEqual(authors[1].id, 2)
-        self.assertEqual(authors[1].name, "John Doe")
-
-
-
+        self.assertEqual(authors[1].name, "Jane Doe")
 
     def test_saves_articles(self):
         # Clear the articles table
@@ -54,6 +65,45 @@ class TestModels(unittest.TestCase):
         self.assertEqual(row[2], "Test Content")
         self.assertEqual(row[3], 1)
         self.assertEqual(row[4], 1)
+
+    def test_invalid_author_creation(self):
+        with self.assertRaises(ValueError):
+            author = Author(name="")
+            author.save()
+
+        with self.assertRaises(ValueError):
+            author = Author(name=123)
+            author.save()
+
+    def test_author_magazines(self):
+        author = Author(name="John Doe")
+        author.save()
+
+        # Create magazines
+        cursor.execute("INSERT INTO magazines (name, category) VALUES (?, ?)", ("Magazine 1", "Tech"))
+        magazine_id = cursor.lastrowid
+        cursor.execute("INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)",
+                       ("Article 1", "Content 1", author.id, magazine_id))
+        cursor.execute("INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)",
+                       ("Article 2", "Content 2", author.id, magazine_id))
+        conn.commit()
+
+        magazines = author.magazines()
+
+    def test_author_update(self):
+        author = Author(name="John Doe")
+        author.save()
+
+        # Update author's name
+        author.name = "Jane Doe"
+        author.save()
+
+        # Verify the author was updated
+        sql = "SELECT * FROM authors WHERE id = ?"
+        row = cursor.execute(sql, (author.id,)).fetchone()
+        self.assertEqual(row[1], "Jane Doe")
+
+    
 
 if __name__ == "__main__":
     unittest.main()

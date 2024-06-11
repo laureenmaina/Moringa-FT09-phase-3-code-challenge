@@ -2,7 +2,6 @@ import unittest
 from models.author import Author
 from models.article import Article
 from models.magazine import Magazine
-# from unittest.mock import MagicMock
 from models.connect import conn,cursor
 from database.setup import create_tables
 
@@ -31,33 +30,26 @@ class TestModels(unittest.TestCase):
         self.assertEqual(magazine.name, "Tech Weekly")
 
     def test_get_all_authors(self):
-        # Insert test data
         author1 = Author(name="John Doe")
         author1.save()
 
         author2 = Author(name="Jane Doe")
         author2.save()
 
-        # Fetch all authors
         authors = Author.get_all_authors()
 
-        # Verify that two authors are fetched
         self.assertEqual(len(authors), 2)
 
-        # Verify that fetched authors match the inserted data
         self.assertEqual(authors[0].name, "John Doe")
         self.assertEqual(authors[1].name, "Jane Doe")
 
     def test_saves_articles(self):
-        # Clear the articles table
         cursor.execute("DELETE FROM articles")
         cursor.connection.commit()
 
-        # Create and save an article
         article = Article(title="Test Title", content="Test Content", author_id=1, magazine_id=1)
         article.save()
 
-        # Verify that the article was saved
         sql = "SELECT * FROM articles WHERE id = ?"
         row = cursor.execute(sql, (article.id,)).fetchone()
         self.assertIsNotNone(row)
@@ -94,11 +86,11 @@ class TestModels(unittest.TestCase):
         author = Author(name="John Doe")
         author.save()
 
-        # Update author's name
+       
         author.name = "Jane Doe"
         author.save()
 
-        # Verify the author was updated
+       
         sql = "SELECT * FROM authors WHERE id = ?"
         row = cursor.execute(sql, (author.id,)).fetchone()
         self.assertEqual(row[1], "Jane Doe")

@@ -121,3 +121,11 @@ class Magazine:
         """
         rows = cursor.execute(sql).fetchall()
         return [cls.instance_from_db(row) for row in rows]
+    
+    @classmethod
+    def drop_table(cls):
+        sql = """
+            DROP TABLE IF EXISTS magazines
+        """
+        cursor.execute(sql)
+        conn.commit()

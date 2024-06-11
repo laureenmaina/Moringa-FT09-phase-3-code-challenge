@@ -1,3 +1,3 @@
 import sqlite3
-conn= sqlite3.connect('tests/magazine.db')
+conn= sqlite3.connect('magazine.db')
 cursor= conn.cursor()

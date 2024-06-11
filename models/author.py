@@ -1,4 +1,4 @@
-from models.connect import conn, cursor as default_cursor
+from models.connect import conn, cursor as default_cursor,cursor
 
 class Author:
     def __init__(self, id=None, name=None):
@@ -83,5 +83,11 @@ class Author:
         rows = cursor.execute(sql).fetchall()
         return [cls.instance_from_db(row) for row in rows]
     
-  
+    @classmethod
+    def drop_table(cls):
+        sql = """
+            DROP TABLE IF EXISTS authors
+        """
+        cursor.execute(sql)
+        conn.commit()
 

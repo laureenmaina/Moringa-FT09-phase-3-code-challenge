@@ -62,36 +62,6 @@ def main():
     new_article.save()
     print(f'New article created with ID: {new_article.id}')
 
-    # Fetch and print all articles
-    all_articles = Article.get_all()
-    print('All Articles:')
-    for article in all_articles:
-        print(article)
-
-    # Fetch an article by ID
-    article_id = new_article.id
-    fetched_article = None
-    for article in all_articles:
-        if article.id == article_id:
-            fetched_article = article
-            break
-
-    if fetched_article:
-        print(f'Fetched Article: {fetched_article}')
-        print(f'Author: {fetched_article.author}')
-        print(f'Magazine: {fetched_article.magazine}')
-
-    # Update an existing article
-    fetched_article.title = 'Updated Article Title'
-    fetched_article.content = 'Updated content of the article.'
-    fetched_article.save()
-    print(f'Updated Article: {fetched_article}')
-
-    # Fetch and print all articles again to see the update
-    all_articles = Article.get_all()
-    print('All Articles After Update:')
-    for article in all_articles:
-        print(article)
 
 if __name__ == "__main__":
     main()

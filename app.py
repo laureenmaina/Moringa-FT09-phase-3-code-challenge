@@ -42,8 +42,6 @@ def main():
     cursor.execute('SELECT * FROM articles')
     articles = cursor.fetchall()
 
-    conn.close()
-
     # Display results
     print("\nMagazines:")
     for magazine in magazines:
@@ -58,10 +56,11 @@ def main():
         print(Article(article[0], article[1], article[2], article[3], article[4]))
 
     # Example usage of the Article class
-    new_article = Article(title='My First Article', content='This is the content of my first article.', author_id=author_id, magazine_id=magazine_id)
+    new_article = Article(title='My First Article', content='This is the content of my first article.', author_id=author_id, magazine_id=magazine_id, conn=conn, cursor=cursor)
     new_article.save()
     print(f'New article created with ID: {new_article.id}')
 
+    conn.close()
 
 if __name__ == "__main__":
     main()

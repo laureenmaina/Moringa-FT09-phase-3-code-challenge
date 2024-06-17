@@ -1,57 +1,86 @@
 import unittest
+import sqlite3
 from models.author import Author
 from models.article import Article
 from models.magazine import Magazine
-from models.connect import conn,cursor
-from database.setup import create_tables
 
+def create_tables():
+    conn = sqlite3.connect(':memory:')
+    cursor = conn.cursor()
 
-create_tables()
+    cursor.execute("""
+        CREATE TABLE authors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE magazines (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE articles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            author_id INTEGER,
+            magazine_id INTEGER,
+            FOREIGN KEY (author_id) REFERENCES authors(id),
+            FOREIGN KEY (magazine_id) REFERENCES magazines(id)
+        )
+    """)
+    conn.commit()
+    return conn, cursor
 
 class TestModels(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.conn, cls.cursor = create_tables()
 
     def setUp(self):
-        # Ensure database is clean before each test
-        cursor.execute("DELETE FROM articles")
-        cursor.execute("DELETE FROM authors")
-        cursor.execute("DELETE FROM magazines")
-        conn.commit()
+        self.conn = TestModels.conn
+        self.cursor = TestModels.cursor
 
     def test_author_creation(self):
-        author = Author(1, "John Doe")
+        author = Author(name="John Doe", conn=self.conn, cursor=self.cursor)
         self.assertEqual(author.name, "John Doe")
 
     def test_article_creation(self):
-        article = Article(1, "Test Title", "Test Content", 1, 1)
+        article = Article(title="Test Title", content="Test Content", author_id=1, magazine_id=1, conn=self.conn, cursor=self.cursor)
         self.assertEqual(article.title, "Test Title")
 
     def test_magazine_creation(self):
-        magazine = Magazine(1, "Tech Weekly")
+        magazine = Magazine(name="Tech Weekly", category="Tech", conn=self.conn, cursor=self.cursor)
         self.assertEqual(magazine.name, "Tech Weekly")
 
     def test_get_all_authors(self):
-        author1 = Author(name="John Doe")
+        self.cursor.execute("DELETE FROM authors")
+        self.conn.commit()
+
+        author1 = Author(name="John Doe", conn=self.conn, cursor=self.cursor)
         author1.save()
 
-        author2 = Author(name="Jane Doe")
+        author2 = Author(name="Jane Doe", conn=self.conn, cursor=self.cursor)
         author2.save()
 
-        authors = Author.get_all_authors()
+        authors = Author.get_all_authors(self.conn, self.cursor)
 
         self.assertEqual(len(authors), 2)
-
         self.assertEqual(authors[0].name, "John Doe")
         self.assertEqual(authors[1].name, "Jane Doe")
 
     def test_saves_articles(self):
-        cursor.execute("DELETE FROM articles")
-        cursor.connection.commit()
+        self.cursor.execute("DELETE FROM articles")
+        self.conn.commit()
 
-        article = Article(title="Test Title", content="Test Content", author_id=1, magazine_id=1)
+        article = Article(title="Test Title", content="Test Content", author_id=1, magazine_id=1, conn=self.conn, cursor=self.cursor)
         article.save()
 
         sql = "SELECT * FROM articles WHERE id = ?"
-        row = cursor.execute(sql, (article.id,)).fetchone()
+        row = self.cursor.execute(sql, (article.id,)).fetchone()
         self.assertIsNotNone(row)
         self.assertEqual(row[1], "Test Title")
         self.assertEqual(row[2], "Test Content")
@@ -60,42 +89,40 @@ class TestModels(unittest.TestCase):
 
     def test_invalid_author_creation(self):
         with self.assertRaises(ValueError):
-            author = Author(name="")
+            author = Author(name="", conn=self.conn, cursor=self.cursor)
             author.save()
 
         with self.assertRaises(ValueError):
-            author = Author(name=123)
+            author = Author(name=123, conn=self.conn, cursor=self.cursor)
             author.save()
 
     def test_author_magazines(self):
-        author = Author(name="John Doe")
+        author = Author(name="John Doe", conn=self.conn, cursor=self.cursor)
         author.save()
 
-        # Create magazines
-        cursor.execute("INSERT INTO magazines (name, category) VALUES (?, ?)", ("Magazine 1", "Tech"))
-        magazine_id = cursor.lastrowid
-        cursor.execute("INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)",
-                       ("Article 1", "Content 1", author.id, magazine_id))
-        cursor.execute("INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)",
-                       ("Article 2", "Content 2", author.id, magazine_id))
-        conn.commit()
+        self.cursor.execute("INSERT INTO magazines (name, category) VALUES (?, ?)", ("Magazine 1", "Tech"))
+        magazine_id = self.cursor.lastrowid
+        self.cursor.execute("INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)",
+                            ("Article 1", "Content 1", author.id, magazine_id))
+        self.cursor.execute("INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)",
+                            ("Article 2", "Content 2", author.id, magazine_id))
+        self.conn.commit()
 
         magazines = author.magazines()
+        self.assertEqual(len(magazines), 1)
+        self.assertEqual(magazines[0].name, "Magazine 1")
+        self.assertEqual(magazines[0].category, "Tech")
 
     def test_author_update(self):
-        author = Author(name="John Doe")
+        author = Author(name="John Doe", conn=self.conn, cursor=self.cursor)
         author.save()
 
-       
         author.name = "Jane Doe"
         author.save()
 
-       
         sql = "SELECT * FROM authors WHERE id = ?"
-        row = cursor.execute(sql, (author.id,)).fetchone()
+        row = self.cursor.execute(sql, (author.id,)).fetchone()
         self.assertEqual(row[1], "Jane Doe")
-
-    
 
 if __name__ == "__main__":
     unittest.main()

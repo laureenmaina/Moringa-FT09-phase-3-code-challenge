@@ -1,17 +1,15 @@
-from models.connect import cursor, conn
-   
 class Article:
-    
-    def __init__(self, id=None, title=None, content=None, author_id=None, magazine_id=None):
+    def __init__(self, id=None, title=None, content=None, author_id=None, magazine_id=None, conn=None, cursor=None):
         self.id = id
         self.title = title
         self.content = content
         self.author_id = author_id
         self.magazine_id = magazine_id
+        self.conn = conn
+        self.cursor = cursor
 
     def __repr__(self):
         return f'<Article {self.title}>'
-    
 
     @property
     def id(self):
@@ -63,76 +61,41 @@ class Article:
             raise ValueError("Magazine ID must be of type int")
         self._magazine_id = value
 
-    @property
-    def author(self):
-        from models.author import Author
-        sql = """
-            SELECT authors.id, authors.name
-            FROM authors
-            INNER JOIN articles 
-            ON authors.id = articles.author_id
-            WHERE articles.id = ?
-        """
-        cursor.execute(sql, (self.id,))
-        row = cursor.fetchone()
-        if row:
-            return Author(row[0], row[1])
-        else:
-            return None
-
-    @property
-    def magazine(self):
-        from models.magazine import Magazine
-        sql = """
-            SELECT magazines.id, magazines.name, magazines.category
-            FROM magazines
-            INNER JOIN articles
-            ON magazines.id = articles.magazine_id
-            WHERE articles.id = ?
-        """
-        cursor.execute(sql, (self.id,))
-        row = cursor.fetchone()
-        if row:
-            return Magazine(row[0], row[1], row[2])
-        else:
-            return None
-
     def save(self):
         if self.id is None:
             sql = """
                 INSERT INTO articles (title, content, author_id, magazine_id)
                 VALUES (?, ?, ?, ?)
             """
-            cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id))
-            conn.commit()
-            self.id = cursor.lastrowid
+            self.cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id))
+            self.conn.commit()
+            self.id = self.cursor.lastrowid
         else:
             sql = """
                 UPDATE articles
                 SET title = ?, content = ?, author_id = ?, magazine_id = ?
                 WHERE id = ?
             """
-            cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id, self.id))
-            conn.commit()
+            self.cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id, self.id))
+            self.conn.commit()
 
     @classmethod
-    def instance_from_db(cls, row):
-        return cls(row[0], row[1],row[2],row[3],row[4])
+    def instance_from_db(cls, row, conn, cursor):
+        return cls(row[0], row[1], row[2], row[3], row[4], conn=conn, cursor=cursor)
 
     @classmethod
-    def get_all(cls):
+    def get_all(cls, conn, cursor):
         sql = """
             SELECT *
             FROM articles
         """
         rows = cursor.execute(sql).fetchall()
-        return [cls.instance_from_db(row) for row in rows]
-    
+        return [cls.instance_from_db(row, conn, cursor) for row in rows]
+
     @classmethod
-    def drop_table(cls):
+    def drop_table(cls, conn, cursor):
         sql = """
             DROP TABLE IF EXISTS articles
         """
         cursor.execute(sql)
         conn.commit()
-    

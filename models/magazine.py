@@ -25,8 +25,8 @@ class Magazine:
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, str) or not (2 <= len(value) <= 16):
-            raise ValueError("Name must be between 2 and 16 characters, inclusive")
+        if not isinstance(value, str) or len(value.strip()) == 0:
+            raise ValueError("Name must be a non-empty string")
         self._name = value
 
     @property
@@ -35,21 +35,32 @@ class Magazine:
 
     @category.setter
     def category(self, value):
-        if not isinstance(value, str) or len(value) <= 0:
-            raise ValueError("Category must be a non-empty string")
+        if not isinstance(value, str) or len(value.strip()) == 0:
+           raise ValueError("Category must be a non-empty string")
         self._category = value
 
     def save(self):
         if self.id is None:
             sql = "INSERT INTO magazines (name, category) VALUES (?, ?)"
             self.cursor.execute(sql, (self.name, self.category))
-            self.conn.commit()
             self.id = self.cursor.lastrowid
         else:
             sql = "UPDATE magazines SET name = ?, category = ? WHERE id = ?"
             self.cursor.execute(sql, (self.name, self.category, self.id))
-            self.conn.commit()
+        self.conn.commit()
 
+    def articles(self):
+        from models.article import Article
+        sql = "SELECT * FROM articles WHERE magazine_id = ?"
+        self.cursor.execute(sql, (self.id,))
+        rows = self.cursor.fetchall()
+        return [Article(*row, conn=self.conn, cursor=self.cursor) for row in rows]
+
+    def article_count(self):
+        sql = "SELECT COUNT(*) FROM articles WHERE magazine_id = ?"
+        self.cursor.execute(sql, (self.id,))
+        return self.cursor.fetchone()[0]
+    
     @classmethod
     def instance_from_db(cls, row, conn, cursor):
         return cls(row[0], row[1], row[2], conn=conn, cursor=cursor)

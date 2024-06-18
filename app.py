@@ -20,17 +20,16 @@ def main():
     cursor = conn.cursor()
 
     # Create an author
-    cursor.execute('INSERT INTO authors (name) VALUES (?)', (author_name,))
-    author_id = cursor.lastrowid
+    author = Author(name=author_name, conn=conn, cursor=cursor)
+    author.save()
 
     # Create a magazine
-    cursor.execute('INSERT INTO magazines (name, category) VALUES (?, ?)', (magazine_name, magazine_category))
-    magazine_id = cursor.lastrowid
+    magazine = Magazine(name=magazine_name, category=magazine_category, conn=conn, cursor=cursor)
+    magazine.save()
 
     # Create an article
-    cursor.execute('INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)',
-                   (article_title, article_content, author_id, magazine_id))
-    conn.commit()
+    article = Article(title=article_title, content=article_content, author_id=author.id, magazine_id=magazine.id, conn=conn, cursor=cursor)
+    article.save()
 
     # Query the database for inserted records
     cursor.execute('SELECT * FROM magazines')
@@ -44,22 +43,23 @@ def main():
 
     # Display results
     print("\nMagazines:")
-    for magazine in magazines:
-        print(Magazine(magazine[0], magazine[1], magazine[2]))
+    for mag in magazines:
+        print(Magazine(mag[0], mag[1], mag[2]))
 
     print("\nAuthors:")
-    for author in authors:
-        print(Author(author[0], author[1]))
+    for auth in authors:
+        print(Author(auth[0], auth[1]))
 
     print("\nArticles:")
-    for article in articles:
-        print(Article(article[0], article[1], article[2], article[3], article[4]))
+    for art in articles:
+        print(Article(art[0], art[1], art[2], art[3], art[4]))
 
     # Example usage of the Article class
-    new_article = Article(title='My First Article', content='This is the content of my first article.', author_id=author_id, magazine_id=magazine_id, conn=conn, cursor=cursor)
+    new_article = Article(title='My First Article', content='This is the content of my first article.', author_id=author.id, magazine_id=magazine.id, conn=conn, cursor=cursor)
     new_article.save()
     print(f'New article created with ID: {new_article.id}')
 
+    # Close the connection after all operations are done
     conn.close()
 
 if __name__ == "__main__":

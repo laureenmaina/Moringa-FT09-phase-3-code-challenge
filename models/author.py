@@ -24,32 +24,41 @@ class Author:
 
     @name.setter
     def name(self, value):
-        if not isinstance(value, str) or len(value) <= 0:
-            raise ValueError("Name must be a non-empty string")
+        if not isinstance(value, str) or len(value.strip()) == 0:
+           raise ValueError("Name must be a non-empty string")
         self._name = value
 
     def save(self):
         if self.id is None:
             sql = "INSERT INTO authors (name) VALUES (?)"
             self.cursor.execute(sql, (self.name,))
-            self.conn.commit()
             self.id = self.cursor.lastrowid
         else:
             sql = "UPDATE authors SET name = ? WHERE id = ?"
             self.cursor.execute(sql, (self.name, self.id))
-            self.conn.commit()
+        self.conn.commit()
+
+
+    def articles(self):
+        from models.article import Article
+        sql = "SELECT * FROM articles WHERE author_id = ?"
+        self.cursor.execute(sql, (self.id,))
+        rows = self.cursor.fetchall()
+        return [Article(*row, conn=self.conn, cursor=self.cursor) for row in rows]
+
+
 
     def magazines(self):
         from models.magazine import Magazine
         sql = """
-        SELECT DISTINCT magazines.id, magazines.name, magazines.category
-        FROM magazines
-        JOIN articles ON magazines.id = articles.magazine_id
-        WHERE articles.author_id = ?
+            SELECT DISTINCT m.id, m.name, m.category 
+            FROM magazines m
+            JOIN articles a ON m.id = a.magazine_id
+            WHERE a.author_id = ?
         """
         self.cursor.execute(sql, (self.id,))
         rows = self.cursor.fetchall()
-        return [Magazine(id=row[0], name=row[1], category=row[2], conn=self.conn, cursor=self.cursor) for row in rows]
+        return [Magazine(*row, conn=self.conn, cursor=self.cursor) for row in rows]
 
 
     @classmethod

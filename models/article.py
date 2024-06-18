@@ -25,6 +25,7 @@ class Article:
     def title(self):
         return self._title
 
+
     @title.setter
     def title(self, value):
         if not isinstance(value, str) or not (5 <= len(value) <= 50):
@@ -37,8 +38,8 @@ class Article:
 
     @content.setter
     def content(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Content must be of type str")
+        if not isinstance(value, str) or len(value.strip()) == 0:
+           raise ValueError("Content must be a non-empty string")
         self._content = value
 
     @property
@@ -63,21 +64,14 @@ class Article:
 
     def save(self):
         if self.id is None:
-            sql = """
-                INSERT INTO articles (title, content, author_id, magazine_id)
-                VALUES (?, ?, ?, ?)
-            """
+            sql = "INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)"
             self.cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id))
-            self.conn.commit()
             self.id = self.cursor.lastrowid
         else:
-            sql = """
-                UPDATE articles
-                SET title = ?, content = ?, author_id = ?, magazine_id = ?
-                WHERE id = ?
-            """
+            sql = "UPDATE articles SET title = ?, content = ?, author_id = ?, magazine_id = ? WHERE id = ?"
             self.cursor.execute(sql, (self.title, self.content, self.author_id, self.magazine_id, self.id))
-            self.conn.commit()
+        self.conn.commit()
+        
 
     @classmethod
     def instance_from_db(cls, row, conn, cursor):

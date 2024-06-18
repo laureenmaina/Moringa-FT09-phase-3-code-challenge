@@ -5,7 +5,7 @@ from models.author import Author
 from models.magazine import Magazine
 
 def main():
-    # Initialize the database and create tables
+  
     create_tables()
 
     # Collect user input
@@ -59,7 +59,7 @@ def main():
     new_article.save()
     print(f'New article created with ID: {new_article.id}')
 
-    # Close the connection after all operations are done
+   
     conn.close()
 
 if __name__ == "__main__":
